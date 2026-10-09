@@ -1,0 +1,10 @@
+version = 1
+
+[snapshot]
+paths = ["skills", "scripts", "tests", "quality.toml"]
+
+[[commands]]
+id = "regression-tests"
+argv = ["{python}", "-B", "-m", "unittest", "discover", "-s", "tests", "-v"]
+timeout = 120
+modes = ["fast", "full"]
