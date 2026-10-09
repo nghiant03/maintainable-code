@@ -50,11 +50,20 @@ Use the instruction mechanism your harness loads.
 
 ## Updates and removal
 
-Re-running an identical install is safe. If contents differ, the installer refuses to overwrite them. For an update:
+Re-running an identical install is a no-op. If contents differ, the installer refuses to replace them unless you supply `--update`. From the desired version of this checkout or release:
 
-1. Back up or move the existing `maintainable-code` directory **outside all skill discovery roots**.
-2. Re-run installation from the desired version of this package.
-3. Start a fresh session if needed and rerun the project's checks.
+```sh
+python3 scripts/install.py --harness shared --scope user --update --dry-run
+python3 scripts/install.py --harness shared --scope user --update
+```
+
+Use the same harness, scope, and project or custom skills directory as the original installation. The dry run lists added, removed, and replaced package files without writing anything. `--update` also installs the skill if it is missing.
+
+`--update` explicitly authorizes replacing the entire installed skill, including local edits and extra files. No backup is retained after success. Save any edits you want to keep before updating. Other skills are left untouched. Symlinks in the existing installation or its parent paths are refused; update a regular installation instead.
+
+The installer stages the new copy before moving the old one aside temporarily, outside the selected skills directory. If publication fails, it restores the old installation. If restoration also fails, it preserves the temporary recovery directory and reports its path. Replacement uses two renames, not an atomic directory exchange; interruption or simultaneous installers can require manual recovery. Do not run concurrent updates to the same destination.
+
+Start a fresh session if needed and rerun the project's checks. The installer updates from local package contents; it does not download releases or update automatically.
 
 To uninstall, remove only the installed `maintainable-code` directory. If you added a custom skill source exclusively for this bundle, remove that specific source entry as well.
 

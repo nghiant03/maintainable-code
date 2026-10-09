@@ -23,6 +23,15 @@ python3 scripts/install.py --harness shared --scope user
 
 Append `--project /path/to/project` to any command for a single project. Install to one location to avoid competing copies; add `--dry-run` to print the destination.
 
+To replace an installed version, run the installer from the desired checkout or release:
+
+```sh
+python3 scripts/install.py --harness opencode --scope user --update --dry-run
+python3 scripts/install.py --harness opencode --scope user --update
+```
+
+`--update` replaces existing contents, including local edits. It retains no backup after success. Preview changes first; without `--update`, differing installations are left untouched.
+
 See [Installation Details](docs/installation.md) for paths, invocation, custom locations, updates, and CI.
 
 ## Use

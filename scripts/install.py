@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copy the portable skill into a documented harness discovery directory."""
+"""Install or explicitly update the portable skill in a harness discovery directory."""
 
 import argparse
 import filecmp
@@ -55,6 +55,48 @@ def identical(source, destination):
     )
 
 
+def validate_update_target(target):
+    if not target.is_dir():
+        raise ValueError(f"Update destination must be a directory: {target}")
+    for path in (target, *target.parents, *target.rglob("*")):
+        if path.is_symlink():
+            raise ValueError(f"Refusing to update a symlinked path: {path}")
+    if not (target / "SKILL.md").is_file():
+        raise ValueError(f"Update destination has no SKILL.md: {target}")
+
+
+def report_changes(source, target):
+    old = package_files(target)
+    new = package_files(source)
+    for name in sorted(old.keys() | new.keys()):
+        if name not in old:
+            print(f"  add: {name}")
+        elif name not in new:
+            print(f"  remove: {name}")
+        elif not filecmp.cmp(old[name], new[name], shallow=False):
+            print(f"  replace: {name}")
+
+
+class UpdateRollbackError(OSError):
+    """Publication and restoration both failed; preserve the recovery directory."""
+
+
+def publish_update(staged, target, previous):
+    """Restore the previous installation if publication fails."""
+    target.rename(previous)
+    try:
+        staged.rename(target)
+    except OSError as publication_error:
+        try:
+            previous.rename(target)
+        except OSError as rollback_error:
+            raise UpdateRollbackError(
+                f"Update failed: {publication_error}; rollback failed: {rollback_error}. "
+                f"Previous installation remains at {previous}"
+            ) from rollback_error
+        raise OSError(f"Update failed; previous installation restored: {publication_error}") from publication_error
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     destination = parser.add_mutually_exclusive_group(required=True)
@@ -63,6 +105,7 @@ def main():
     parser.add_argument("--scope", choices=("project", "user"), default="project")
     parser.add_argument("--project", type=Path, help="Project directory (defaults to current directory)")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--update", action="store_true", help="Replace an existing skill, including local edits; no backup is retained")
     args = parser.parse_args()
     if args.project is not None and (args.scope == "user" or args.skills_dir):
         parser.error("--project is only used for project-scoped harness installs")
@@ -76,24 +119,44 @@ def main():
             raise ValueError(f"Skill source missing: {SOURCE}")
         if target.resolve() != SOURCE and target.resolve().is_relative_to(SOURCE):
             raise ValueError("Install destination must not be inside the source skill")
+        if args.update and SOURCE.is_relative_to(target.resolve()):
+            raise ValueError("Update destination must not contain the source skill")
+        updating = False
         if target.exists() or target.is_symlink():
+            if args.update:
+                validate_update_target(target)
             if identical(SOURCE, target):
                 print(f"Already installed (identical): {target}")
                 return 0
-            raise ValueError(
-                f"Destination already exists: {target}. Back it up outside skill discovery "
-                "directories and remove that specific directory before updating."
-            )
+            if not args.update:
+                raise ValueError(f"Destination already exists: {target}. Use --update to replace it.")
+            updating = True
+            print(f"Update destination: {target}")
+            report_changes(SOURCE, target)
         if args.dry_run:
-            print(f"Would copy {SOURCE} to {target}")
+            if updating:
+                print(f"Would replace with {SOURCE}; no backup is retained")
+            else:
+                print(f"Would copy {SOURCE} to {target}")
             return 0
         target.parent.mkdir(parents=True, exist_ok=True)
         # Stage outside the skills directory, then publish the completed copy.
-        with tempfile.TemporaryDirectory(prefix=".maintainable-install-", dir=target.parent.parent) as temporary:
+        temporary = tempfile.mkdtemp(prefix=".maintainable-install-", dir=target.parent.parent)
+        preserve_recovery = False
+        try:
             staged = Path(temporary) / SKILL_NAME
             shutil.copytree(SOURCE, staged, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-            staged.rename(target)
-        print(f"Installed: {target}")
+            if updating:
+                publish_update(staged, target, Path(temporary) / "previous")
+            else:
+                staged.rename(target)
+        except UpdateRollbackError:
+            preserve_recovery = True
+            raise
+        finally:
+            if not preserve_recovery:
+                shutil.rmtree(temporary)
+        print(f"{'Updated' if updating else 'Installed'}: {target}")
         print("Load maintainable-code in your harness; start a new session if it is not listed.")
         return 0
     except (OSError, ValueError) as error:
