@@ -1,6 +1,6 @@
 ---
 name: maintainable-code
-description: Guide non-trivial code changes toward clear naming, cohesive responsibilities, and explicit module boundaries. Use when introducing or renaming APIs and domain concepts, refactoring, reviewing maintainability, initializing repository quality checks or domain context, or updating that context. Includes a deterministic checker for project-defined rules. Do not invoke for formatting-only edits, simple factual questions, or unrelated prose.
+description: Improve code naming, comments, API contracts, and module responsibilities. Use for maintainability reviews, comment and docstring audits, API or domain renames, substantial refactors, and repository quality-check or context setup. Includes a checker for project-defined rules. Not for formatting-only edits or unrelated prose.
 compatibility: File access, code search, and command execution. Bundled checker requires Python 3.11+ and the repository's configured tools.
 user-invocable: true
 ---
@@ -19,7 +19,7 @@ Use existing repository context and tools by default. `quality.toml` is optional
 |---|---|
 | Initialize this repository / set up quality checks | Initialize |
 | Run maintainability checks | Check |
-| Review names, APIs, or design | Review (read-only unless edits requested) |
+| Review names, APIs, comments, or design | Review (read-only unless edits requested) |
 | Implement or refactor something | Review relevant context, implement, then Check |
 | Revise glossary, boundaries, or verification policy | Update context |
 
@@ -46,8 +46,9 @@ Initialization is an agent workflow, not an automatic policy generator. Do not i
 3. Evaluate names through **understandability, conciseness, consistency, and distinguishability**. Use existing domain terminology. Make meaningful side effects and units discoverable in the name or contract, considering unit-bearing types and local conventions.
 4. Look for information leakage, surprising side effects, responsibilities that change for unrelated reasons, duplicated business knowledge, and abstractions that force callers to understand more rather than less.
 5. For renames, inspect external API fields, serialization, database columns, reflection, configuration, docs, and consumers. A successful symbol rename alone does not establish compatibility. Preserve externally fixed names or propose a deliberate migration.
-6. Implement only authorized changes, incrementally. Preserve behavior unless a behavior change is requested. Use [commenting principles](references/commenting-principles.md) when documenting contracts, explaining non-obvious decisions, or reviewing comments. Preserve useful rationale, update comments with behavior, and remove only redundant narration. Keep coherent routines; splitting merely to hit a length threshold can increase complexity.
-7. After a coherent edit batch, run Check. Examine the final diff and report concise findings with suggested corrections or a completion summary.
+6. Implement only authorized changes, incrementally. Preserve behavior unless a behavior change is requested. Use [commenting principles](references/commenting-principles.md) when documenting contracts, explaining non-obvious decisions, or reviewing comments. Keep coherent routines; splitting merely to hit a length threshold can increase complexity.
+7. Review comments in two passes: **correctness and contract coverage**, then **clarity and subtraction**. Verify claims first; then remove redundant narration, interrupting asides, duplicated explanations, and misplaced detail without losing consequential contracts or rationale. Read the result as prose, not just a list of true statements. Apply both passes to the requested scope, not only newly added comments.
+8. After a coherent edit batch, run Check. Examine the final diff and report concise findings with suggested corrections or a completion summary.
 
 Do not impose universal bans on `data`, `manager`, boolean arguments, short local variables, or long functions. Framework names, external schemas, generic infrastructure, and bounded contexts need contextual treatment. No numerical maintainability score.
 
@@ -84,6 +85,8 @@ Smallest useful correction; compatibility implications if relevant.
 ```
 
 For implementation or initialization, summarize changes and verification: mode, passed/failed/incomplete, remaining warnings or blockers, and what was not checked. Do not describe a fast pass as a full pass or a deterministic rule as proof of semantic quality. If no concrete issue is found, say so with the scope inspected.
+
+For comment reviews, state the coverage and distinguish factual corrections from readability findings. Passing tests or enumerating every comment does not establish writing quality; do not claim a repository-wide audit after reviewing only a diff.
 
 ## Resources
 
