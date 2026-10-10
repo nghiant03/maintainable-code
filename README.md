@@ -40,6 +40,8 @@ After installation, ask your agent:
 
 > Use maintainable-code to review this repository's naming and design. Reuse its existing checks.
 
+A general maintainability review covers naming/API contracts, comments/docstrings, and design/responsibilities. Comment review has separate correctness/contract-coverage and clarity/subtraction passes. Reviews and implementations report inspected scope and results for each dimension before claiming completion; explicitly narrow requests can exclude dimensions. Passing checks alone does not establish semantic review coverage.
+
 Other requests:
 
 - “Review this diff with maintainable-code; focus on API naming and side effects.”
@@ -96,5 +98,3 @@ On Linux, the tests use temporary projects and installation directories. They ex
 - **Repository:** commands, vocabulary, dependency policy, explicit exceptions.
 - **Harness:** loading and execution. No hook/plugin adapter is needed.
 - **CI:** run a pinned copy of the same checker for reproducible enforcement.
-
-Book guidance is paraphrased in the references; no book PDF is distributed. Installation paths were checked against official documentation on 2026-10-08; the Crush guidance targets v0.97.1 and OpenCode guidance targets V2.

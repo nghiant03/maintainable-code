@@ -20,10 +20,12 @@ Use existing repository context and tools by default. `quality.toml` is optional
 | Initialize this repository / set up quality checks | Initialize |
 | Run maintainability checks | Check |
 | Review names, APIs, comments, or design | Review (read-only unless edits requested) |
-| Implement or refactor something | Review relevant context, implement, then Check |
+| Implement or refactor something | Review relevant context, Implement, then Check and coverage gate |
 | Revise glossary, boundaries, or verification policy | Update context |
 
 Use the user's requested scope. Resolve the actual project/worktree directory separately from this skill's installation directory. Supporting paths below are relative to the directory containing this `SKILL.md`; resolve that directory from the harness, rather than assuming the current directory contains the checker.
+
+A general maintainability review covers **naming/API contracts, comments/docstrings, and design/responsibilities**. Architecture findings do not replace naming or comment assessment. An explicitly narrow request limits the dimensions reviewed; record exclusions rather than silently dropping dimensions. Check-only and initialization requests do not imply a full semantic review.
 
 ## Initialize
 
@@ -39,18 +41,50 @@ Use the user's requested scope. Resolve the actual project/worktree directory se
 
 Initialization is an agent workflow, not an automatic policy generator. Do not invent a layering scheme, install dependencies without task authorization, or overwrite existing policy. If debt needs baselining, use the project's existing tool after explicit agreement; this bundle does not generate baselines.
 
-## Review and implement
+## Review
 
-1. Establish scope from the requested files or diff, including relevant new files. Read changed code, nearby conventions, callers, tests, and relevant glossary entries. Follow dependencies beyond the diff when needed to understand a contract.
-2. Establish actual behavior before judging its name. Consult [naming principles](references/naming-principles.md) for naming/API work and [design principles](references/design-principles.md) for responsibility or boundary changes.
-3. Evaluate names through **understandability, conciseness, consistency, and distinguishability**. Use existing domain terminology. Make meaningful side effects and units discoverable in the name or contract, considering unit-bearing types and local conventions.
-4. Look for information leakage, surprising side effects, responsibilities that change for unrelated reasons, duplicated business knowledge, and abstractions that force callers to understand more rather than less.
-5. For renames, inspect external API fields, serialization, database columns, reflection, configuration, docs, and consumers. A successful symbol rename alone does not establish compatibility. Preserve externally fixed names or propose a deliberate migration.
-6. Implement only authorized changes, incrementally. Preserve behavior unless a behavior change is requested. Use [commenting principles](references/commenting-principles.md) when documenting contracts, explaining non-obvious decisions, or reviewing comments. Keep coherent routines; splitting merely to hit a length threshold can increase complexity.
-7. Review comments in two passes: **correctness and contract coverage**, then **clarity and subtraction**. Verify claims first; then remove redundant narration, interrupting asides, duplicated explanations, and misplaced detail without losing consequential contracts or rationale. Read the result as prose, not just a list of true statements. Apply both passes to the requested scope, not only newly added comments.
-8. After a coherent edit batch, run Check. Examine the final diff and report concise findings with suggested corrections or a completion summary.
+Review is read-only unless edits are requested. Track these checkpoints separately, using an inline checklist or the harness's task tracker. For a long review, retain the scope and evidence in a task-local progress artifact so the review can resume without losing coverage. Do not mark a checkpoint complete merely because another dimension has findings.
+
+```text
+[ ] Establish scope and read applicable references
+[ ] Assess naming and API contracts
+[ ] Comments pass 1: correctness and contract coverage
+[ ] Comments pass 2: clarity and subtraction
+[ ] Assess design and responsibilities
+[ ] Apply the coverage gate
+```
+
+1. **Scope and references.** Establish scope from the requested files or diff, including relevant new files. For a repository review, identify the inspected files and whether coverage is exhaustive or sampled; do not silently substitute a diff review. Read code, nearby conventions, callers, tests, and relevant glossary entries. Follow dependencies beyond the scope when needed to understand a contract. Read [naming principles](references/naming-principles.md), [commenting principles](references/commenting-principles.md), and [design principles](references/design-principles.md) for a general review; for a narrow review, read the references for its included dimensions.
+2. **Naming and API contracts.** Establish actual behavior before judging names. Evaluate **understandability, conciseness, consistency, and distinguishability**. Use existing domain terminology. Make meaningful side effects and units discoverable in the name or contract, considering unit-bearing types and local conventions. Record the declarations and relevant callers inspected, not just suspicious words found by search.
+3. **Comments pass 1 — correctness and contract coverage.** Verify claims against code, tests, specifications, or recorded decisions. Identify missing information needed to use or change the code safely, including interfaces with no comments. Record consequential contracts and rationale that subsequent shortening must preserve. Apply this pass to the selected scope, not only newly added comments; preserve required notices and tool directives.
+4. **Comments pass 2 — clarity and subtraction.** After pass 1, revisit the same scope and read comments as prose. Identify redundant narration, interrupting asides, duplicated explanations, and misplaced detail. A true comment can still be hard to read, so perform this pass even when pass 1 finds no inaccuracies. In a read-only review, suggest corrections rather than editing. Check proposed shortening against pass 1 so it retains consequential units, bounds, ownership, failures, invariants, and rationale. If there are no comments, record that observation for pass 2; it does not excuse missing-contract assessment in pass 1.
+5. **Design and responsibilities.** Look for information leakage, surprising side effects, responsibilities that change for unrelated reasons, duplicated business knowledge, and abstractions that force callers to understand more rather than less. Record the interfaces or boundaries inspected and the evidence for any finding.
+6. **Coverage gate.** Reconcile the checkpoints with the coverage record below before reporting completion. Report supported findings even if coverage remains incomplete, but make that limitation explicit.
+
+## Implement
+
+1. Review the relevant context using the checkpoints above. For implementation or refactoring, cover naming, both comment passes, and design in the affected scope; this is not a request to audit unrelated repository code.
+2. Implement only authorized changes, incrementally. Preserve behavior unless a behavior change is requested. For renames, inspect external API fields, serialization, database columns, reflection, configuration, docs, and consumers. A successful symbol rename alone does not establish compatibility. Preserve externally fixed names or propose a deliberate migration.
+3. Document consequential contracts and non-obvious decisions using the commenting principles. Keep coherent routines; splitting merely to hit a length threshold can increase complexity.
+4. After a coherent edit batch, run Check and examine the final diff. Refresh the affected review checkpoints on the final source state, including both comment passes and confirmation that prose edits preserved the contracts identified in pass 1. Apply the coverage gate before claiming implementation complete; a passing test command does not complete semantic review.
 
 Do not impose universal bans on `data`, `manager`, boolean arguments, short local variables, or long functions. Framework names, external schemas, generic infrastructure, and bounded contexts need contextual treatment. No numerical maintainability score.
+
+## Coverage gate
+
+For Review and Implement, keep a compact coverage record and include it in the final report. Each included dimension needs inspected file paths, symbols, or line ranges and a result: **findings**, **no supported issues**, or **incomplete**. Use **outside requested scope** only with a reason tied to the user's request. Shared locations can reference the scope line; do not enumerate every comment or force findings to fill the record.
+
+```text
+Scope: <files/diff/sample; exclusions and limits>
+Naming/API: <result; inspected locations or scope reference>
+Comments — correctness/coverage: <result; locations and missing-contract assessment>
+Comments — clarity/subtraction: <result; locations revisited after pass 1>
+Design/responsibilities: <result; inspected locations or scope reference>
+```
+
+Before claiming completion, check that every included checkpoint has evidence for the current source state and that both comment passes cover the same selected scope. If a checkpoint is missing, perform it or report the review as incomplete with the specific gap. A narrower inspected sample can be complete for that sample, not for the whole repository. Later relevant edits invalidate the affected checkpoints.
+
+This gate checks accountable coverage, not semantic quality by itself. A checked box, subagent success report, passing tests, or bundled checker exit code is not evidence that naming or prose was assessed. Do not invent defects or claim unobserved work to satisfy the gate.
 
 ## Check
 
@@ -86,7 +120,7 @@ Smallest useful correction; compatibility implications if relevant.
 
 For implementation or initialization, summarize changes and verification: mode, passed/failed/incomplete, remaining warnings or blockers, and what was not checked. Do not describe a fast pass as a full pass or a deterministic rule as proof of semantic quality. If no concrete issue is found, say so with the scope inspected.
 
-For comment reviews, state the coverage and distinguish factual corrections from readability findings. Passing tests or enumerating every comment does not establish writing quality; do not claim a repository-wide audit after reviewing only a diff.
+For all reviews and implementations, include the coverage record above. Distinguish factual or missing-contract comment findings from readability findings, including in general maintainability reviews. Passing tests or enumerating every comment does not establish writing quality; do not claim a repository-wide audit after reviewing only a diff.
 
 ## Resources
 
