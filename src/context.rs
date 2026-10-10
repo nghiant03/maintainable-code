@@ -112,7 +112,7 @@ fn excluded(path: &Path, project: &Path, patterns: &[Pattern]) -> bool {
     })
 }
 
-/// Resolve lexical components before touching files; links are never traversed.
+/// Resolve project-relative components, rejecting symlinks as each component is visited.
 fn scope(project: &Path, raw: &Path) -> Result<PathBuf, String> {
     let mut path = project.to_path_buf();
     for part in raw.components() {

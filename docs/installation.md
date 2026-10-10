@@ -51,7 +51,9 @@ An identical installation is a no-op. Differing contents require explicit `--upd
 
 Updates replace the entire installed skill, including edits, extra files, and obsolete Python helpers. No backup remains after success; save local edits first. Other skills are untouched. Existing update destinations must be regular directories containing `SKILL.md`; linked paths and special files are refused.
 
-Installation stages the complete package outside the skill discovery directory before publication. Failed publication restores the previous directory. If restoration also fails, the temporary recovery directory is retained and reported. Publication uses directory renames, not an atomic exchange. Interruption and concurrent updates can require manual recovery; never update the same destination concurrently. The `install --update` operation is local: the installer does not fetch releases. The separate `update` command downloads and verifies a release before invoking that installer.
+Installation stages the complete package in a hidden `.maintainable-install-*` directory inside the skills directory. This keeps staging and rollback on the destination filesystem and requires no write access to the skills directory's parent. A harness that recursively scans hidden directories may discover the staged skill or backup before cleanup; hidden names do not guarantee discovery isolation.
+
+Failed publication restores the previous directory. If restoration also fails, the temporary recovery directory is retained and reported. Publication uses directory renames, not an atomic exchange. Interruption and concurrent updates can require manual recovery; never update the same destination concurrently. The `install --update` operation is local: the installer does not fetch releases. The separate `update` command downloads and verifies a release before invoking that installer.
 
 To uninstall, remove only the installed `maintainable-code` folder. Remove a custom discovery entry only if it exists exclusively for this skill.
 

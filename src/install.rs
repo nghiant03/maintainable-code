@@ -314,9 +314,11 @@ pub fn run(options: Options) -> Result<(String, u8), String> {
     }
     let parent = target.parent().ok_or("Destination has no parent")?;
     fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    // Keep staging and rollback on the destination filesystem without requiring
+    // write access to the skills directory's parent.
     let temporary = tempfile::Builder::new()
         .prefix(".maintainable-install-")
-        .tempdir_in(parent.parent().ok_or("Skills directory has no parent")?)
+        .tempdir_in(parent)
         .map_err(|error| error.to_string())?;
     let staged = temporary.path().join("maintainable-code");
     fs::create_dir(&staged).map_err(|error| error.to_string())?;

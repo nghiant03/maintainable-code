@@ -305,7 +305,7 @@ fn cache_directory() -> Option<PathBuf> {
         })?;
     Some(base.join("maintainable-code"))
 }
-fn safe_directory(path: &Path) -> Result<(), String> {
+fn ensure_cache_directory(path: &Path) -> Result<(), String> {
     for ancestor in path.ancestors() {
         if fs::symlink_metadata(ancestor).is_ok_and(|info| info.file_type().is_symlink()) {
             return Err("Update cache paths must not contain symlinks".into());
@@ -317,7 +317,7 @@ fn cache_path(directory: &Path, repository: &str) -> PathBuf {
     directory.join(format!("{}.json", repository.replace('/', "--")))
 }
 fn save_cache(directory: &Path, cache: &Cache) -> Result<(), String> {
-    safe_directory(directory)?;
+    ensure_cache_directory(directory)?;
     if fs::symlink_metadata(cache_path(directory, &cache.repository))
         .is_ok_and(|info| info.file_type().is_symlink())
     {
@@ -384,7 +384,7 @@ pub fn notify() {
         return;
     };
     let repository = repository();
-    if validate_repository(repository).is_err() || safe_directory(&directory).is_err() {
+    if validate_repository(repository).is_err() || ensure_cache_directory(&directory).is_err() {
         return;
     }
     let release = advisory_release(&directory, repository, now(), || {

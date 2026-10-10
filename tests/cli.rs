@@ -628,13 +628,60 @@ fn update_removes_obsolete_files_without_touching_siblings_or_leaving_backups() 
         fs::read_to_string(fixture.root.join("skills/another-skill/SKILL.md")).unwrap(),
         "keep"
     );
-    assert!(fs::read_dir(&fixture.root).unwrap().all(|entry| {
-        !entry
+    assert!(
+        fs::read_dir(fixture.root.join("skills"))
             .unwrap()
-            .file_name()
-            .to_string_lossy()
-            .starts_with(".maintainable-install-")
-    }));
+            .all(|entry| {
+                !entry
+                    .unwrap()
+                    .file_name()
+                    .to_string_lossy()
+                    .starts_with(".maintainable-install-")
+            })
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn install_and_update_need_no_write_access_to_skills_parent() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let fixture = Fixture::new();
+    let parent = fixture.root.join("restricted");
+    let skills = parent.join("skills");
+    fs::create_dir_all(&skills).unwrap();
+    let original_permissions = fs::metadata(&parent).unwrap().permissions();
+    fs::set_permissions(&parent, fs::Permissions::from_mode(0o555)).unwrap();
+
+    // Privileged users can bypass mode bits, so confirm this fixture can enforce
+    // the restriction before treating it as a permission regression test.
+    let probe = tempfile::tempdir_in(&parent);
+    if probe.is_ok() {
+        drop(probe);
+        fs::set_permissions(&parent, original_permissions).unwrap();
+        eprintln!("Skipping permission regression: parent remains writable");
+        return;
+    }
+
+    let installed = fixture.run(&["install", "--skills-dir", "restricted/skills"]);
+    let target = skills.join("maintainable-code");
+    if installed.status.success() {
+        fs::write(target.join("obsolete.txt"), "remove on update").unwrap();
+    }
+    let updated = fixture.run(&["install", "--skills-dir", "restricted/skills", "--update"]);
+    fs::set_permissions(&parent, original_permissions).unwrap();
+
+    for output in [installed, updated] {
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    assert!(target.join("SKILL.md").is_file());
+    assert!(!target.join("obsolete.txt").exists());
+    assert_eq!(fs::read_dir(&skills).unwrap().count(), 1);
+    assert_eq!(fs::read_dir(&parent).unwrap().count(), 1);
 }
 
 #[test]
