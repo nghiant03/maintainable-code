@@ -49,6 +49,8 @@ Comments compete with code for the reader's attention. State the main behavior o
 
 - Avoid parenthetical prose by default. Integrate essential information into the sentence, give it a separate sentence, or delete an unnecessary aside. Do not merely replace parentheses with dashes, commas, or semicolons; remove the interruption itself.
 - Preserve parentheses needed for code examples, formulas, citations, and tool syntax. A short parenthetical term can be useful when it genuinely clarifies the text. Do not impose a punctuation ban or alter executable code to satisfy this prose guidance.
+- Prefer separate sentences over semicolons in comment prose. Semicolons often join claims that are easier to scan independently. Keep one when it makes a close relationship clearer, but do not chain conditions, caveats, or unrelated instructions with `;`. Preserve semicolons in code examples, literal text, and tool syntax.
+- Use colons to introduce a list, example, or explanation directly tied to the preceding phrase. Avoid unnecessary labels such as “Note:” or “Explanation:” when a direct sentence is clearer. Preserve colons in code examples, literal text, and tool directives.
 - State precise conditions instead of accumulating qualifications. Keep a caveat when it changes how the reader must call or modify the code, not merely to make a sentence sound cautious or comprehensive.
 - Do not narrate statements, explain ordinary language idioms to experienced maintainers, or paraphrase the signature. A comment should supply information the intended reader would otherwise have to reconstruct.
 - Keep local comments local. Move broad workflow explanations to authoritative documentation and retain the relevant constraint and reference beside the code. Leave obsolete milestone history and change narratives to version control unless they explain a current restriction.
@@ -71,6 +73,11 @@ After:  Reject stale writes even when the client omits the revision token.
 Before: Persist the record (using the database transaction), then publish it
         (after the commit has completed), so subscribers can read it safely.
 After:  Publish only after commit so subscribers can read the persisted record.
+
+Before: Return an empty list if no records match; leave the cache unchanged;
+        callers must retry transient failures.
+After:  Return an empty list if no records match. Leave the cache unchanged.
+        Callers must retry transient failures.
 ```
 
 The third example assumes the input snapshot and durable revision comparison are documented at their authoritative interface. Do not shorten a comment by erasing a distinction its reader needs.
