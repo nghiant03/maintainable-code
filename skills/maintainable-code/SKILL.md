@@ -1,7 +1,7 @@
 ---
 name: maintainable-code
-description: Improve code naming, comments, API contracts, and module responsibilities. Use for maintainability reviews, comment and docstring audits, API or domain renames, substantial refactors, and repository quality-check or context setup. Includes a checker for project-defined rules. Not for formatting-only edits or unrelated prose.
-compatibility: File access, code search, and command execution. Bundled checker requires Python 3.11+ and the repository's configured tools.
+description: Improve code naming, comments, API contracts, and module responsibilities. Use for maintainability reviews, comment and docstring audits, API or domain renames, substantial refactors, repository quality-check or context setup, and updating the installed maintainable-code skill. Includes compact rule retrieval and source inventories for agent review. Not for formatting-only edits or unrelated prose.
+compatibility: File access, code search, and command execution. Optional retrieval uses the platform-specific maintainable-code executable installed under bin/. No Python or runtime grammar downloads.
 user-invocable: true
 ---
 
@@ -9,9 +9,9 @@ user-invocable: true
 
 Support every finding with inspected evidence and propose the smallest correction that addresses its consequence. Do not substitute generic clean-code advice for an observed issue.
 
-The skill supplies a reusable checker and review guidance. The repository owns its vocabulary, architecture, commands, and exceptions. The harness supplies file access and execution; ordinary skill loading is sufficient.
+The skill supplies review guidance and project-read-only retrieval commands. Automatic version checks may contact GitHub and write a user cache; disable them for strict offline/read-only operation. The repository owns its vocabulary, architecture, commands, and exceptions. The harness supplies file access and execution; ordinary skill loading is sufficient. Install/update operations are separate from review.
 
-Use existing repository context and tools by default. `quality.toml` is optional for the skill. Create it only when the user explicitly requests bundled checker setup; otherwise run existing project checks directly.
+Use existing repository context and tools by default. Run project checks directly; this skill does not introduce a check-runner configuration.
 
 ## Choose the workflow
 
@@ -22,8 +22,9 @@ Use existing repository context and tools by default. `quality.toml` is optional
 | Review names, APIs, comments, or design | Review (read-only unless edits requested) |
 | Implement or refactor something | Review relevant context, Implement, then Check and coverage gate |
 | Revise glossary, boundaries, or verification policy | Update context |
+| Update this installed skill / handle an available release | Update skill |
 
-Use the user's requested scope. Resolve the actual project/worktree directory separately from this skill's installation directory. Supporting paths below are relative to the directory containing this `SKILL.md`; resolve that directory from the harness, rather than assuming the current directory contains the checker.
+Use the user's requested scope. Resolve the actual project/worktree directory separately from this skill's installation directory. Supporting paths below are relative to the directory containing this `SKILL.md`; resolve that directory from the harness, rather than assuming the current directory contains the helpers.
 
 A general maintainability or code-quality review covers **identifier clarity, API contracts, comment correctness/coverage, comment readability, and design/responsibilities**. Assess how names and prose help a reader understand working code, as well as whether behavior is correct. An explicitly narrow request limits the dimensions reviewed; record exclusions rather than silently dropping dimensions. Check-only and initialization requests do not imply a full semantic review.
 
@@ -38,7 +39,24 @@ For each applicable rule:
 3. For a supported finding, state the rule ID, exact location, observed mismatch, consequence, and smallest correction. For example: `N3 — client.py:42: timeout=5000 has no unit in its type or contract; callers cannot choose a duration reliably. Use timeoutMs or a duration type after checking consumers.`
 4. When editing, preserve the established contract and verify the affected callers. When reviewing read-only, propose the correction without changing files.
 
-Rule IDs label semantic review guidance, not built-in checker diagnostics. Passing configured commands does not establish that these rules were assessed. Do not invent findings to fill a rule checklist.
+Rule IDs label semantic review guidance, not automatic diagnostics. Passing project checks does not establish that these rules were assessed. Do not invent findings to fill a rule checklist.
+
+## Reduce review context
+
+Use helpers when they save reading, not as mandatory steps. See [review helpers](references/review-helpers.md) for their contracts and limitations.
+
+- Resolve `<skill-dir>/bin/maintainable-code` (`maintainable-code.exe` on Windows). If the matching platform executable is unavailable, use existing harness tools and report that retrieval gap; do not download/install tooling without authorization.
+- Retrieve relevant table rows with `<binary> rules --rules N3 C2 D7`, or select `--dimension naming`, `comments`, or `design`. Rows come from references embedded at build time and include exceptions. Read broader reference guidance when trade-offs matter. Local reference edits require a source rebuild to change CLI rule output.
+- Retrieve declarations with `<binary> context --project <checkout> --mode symbols src`. Add `--symbol '*lookup*'` to filter names. Retrieve complete comment source across supported files with `--mode comments --all`; no paths means the entire project. All grammars are bundled; inputs must be UTF-8. Python docstrings retain literal spelling rather than decoded contents.
+- Treat every record as a navigation aid, not a suspected violation. Use `rules` to retrieve relevant guidance. Follow locations into bodies, callers, tests, and agreed policy before reporting. Missing documentation is not automatically a C2 violation; an import is not automatically a D6 violation.
+- Inspect `omittedRecords`, `clippedFields`, `skipped`, and `errors`. Narrow the scope or read source directly when relevant evidence is omitted. Unsupported languages and declaration kinds require language-aware harness tools. An inventory is not review coverage and helper exit `0` is not a quality pass. `--all` removes output budgets, not parser or discovery limitations.
+- Update notices appear on stderr, never in context JSON. Report availability briefly without treating it as a finding or permission to upgrade. For strict offline/read-only retrieval use `<binary> --no-update-check context ...` or set `MAINTAINABLE_NO_UPDATE_CHECK=1`.
+
+## Update skill
+
+Follow [the agent update procedure](references/updating.md). Confirm the installation and obtain permission before replacing its contents. Use `<binary> update --check`, then an authorized `<binary> update --dry-run` to inspect replacement; previews download and execute a checksum-verified release installer without changing installed contents. Apply only with explicit authorization using `<binary> update --apply`.
+
+Updates replace local edits and retain no backup after success. On Windows, `status: prepared` is not completion: execute the reported `applyCommand` after the old process exits. Verify the installed version/manifest and refresh skill loading afterward. Do not update silently during an unrelated review or change release source to bypass failures.
 
 ## Initialize
 
@@ -46,11 +64,10 @@ Rule IDs label semantic review guidance, not built-in checker diagnostics. Passi
 2. Summarize the facts you can establish: installed tools, existing check commands, conventions, documented contracts. Distinguish these from proposed policy. Repeated imports do not prove intended architecture.
 3. Ask focused questions only about consequential unknowns: ambiguous domain terms, forbidden dependency directions, required versus advisory checks, compatibility promises, or acceptance of existing debt. Continue independent discovery while awaiting answers. Reuse explicit decisions already documented.
 4. Create only the missing useful context:
-   - A repository `quality.toml` only when bundled checker setup is explicitly requested, with commands verified from this repository. Read [checker configuration](references/checker.md); adapt [the template](assets/quality.toml.example), rather than copying illustrative commands blindly.
    - A few lines in the repository's instruction file describing actual check commands and relevant policy locations. Preserve existing instructions. `AGENTS.md` is common; use the harness's actual instruction mechanism (for example `CLAUDE.md` for Claude Code).
    - A glossary only where terminology needs clarification. Use [the context template](assets/repository-context.md) selectively.
-   - Executable architecture constraints only for agreed boundaries, using existing repository tools. Run them directly or through the bundled checker's `commands`; it has no built-in language-specific rules.
-5. Run existing project checks directly, or use the bundled checker if its policy is configured. Report what was reused, added, passed, failed, and left uncertain. If no runnable checks are found or tools are unavailable, report the verification gap.
+   - Executable architecture constraints only for agreed boundaries, using existing repository tools.
+5. Run existing project checks directly. Report what was reused, added, passed, failed, and left uncertain. If no runnable checks are found or tools are unavailable, report the verification gap.
 
 Initialization is an agent workflow, not an automatic policy generator. Do not invent a layering scheme, install dependencies without task authorization, or overwrite existing policy. If debt needs baselining, use the project's existing tool after explicit agreement; this bundle does not generate baselines.
 
@@ -97,25 +114,16 @@ Design/responsibilities: <result; inspected locations or scope reference>
 
 Before claiming completion, check that every included checkpoint has evidence for the current source state and that both comment passes cover the same selected scope. If a checkpoint is missing, perform it or report the review as incomplete with the specific gap. A narrower inspected sample can be complete for that sample, not for the whole repository. Later relevant edits invalidate the affected checkpoints.
 
-This gate checks accountable coverage, not semantic quality by itself. A checked box, subagent success report, passing tests, or bundled checker exit code is not evidence that naming or prose was assessed. Do not invent defects or claim unobserved work to satisfy the gate.
+This gate checks accountable coverage, not semantic quality by itself. A checked box, subagent success report, passing tests, or helper output is not evidence that naming or prose was assessed. Do not invent defects or claim unobserved work to satisfy the gate.
 
 ## Check
 
 Discover check commands from existing project instructions, manifests, tool configuration, and CI. Run the relevant check-only commands directly; no new configuration is needed. Report the commands and their results. If none can be established, report that verification is incomplete rather than creating policy.
 
-When the repository already has a policy for the bundled checker, run it using the resolved skill location and explicit checkout:
-
-```sh
-python3 /absolute/path/to/maintainable-code/scripts/check.py --project /absolute/path/to/project --mode fast
-python3 /absolute/path/to/maintainable-code/scripts/check.py --project /absolute/path/to/project --mode full --format json
-```
-
-- For the bundled checker, read `quality.toml` and [the checker contract](references/checker.md) first. Commands execute in the configured repository working directory, using installed tools. The checker never installs tools, reformats code, or revises policy itself; configured commands must be check-only.
 - Use fast checks while iterating and the project's required full checks before declaring implementation complete. Do not run commands just to answer a read-only design question.
-- Bundled checker exit `0` means selected checks passed (warnings may remain); `1` means violations; `2` means verification incomplete. For direct commands, interpret each tool's exit codes. Inspect individual results; incomplete verification can coexist with concrete failures.
+- Interpret each project's tool exit codes. Inspect individual results; incomplete verification can coexist with concrete failures.
 - Correct failures you can address within scope, then rerun affected verification. Stop repeated repairs when no progress is made; report the unresolved issue. Do not delete tests, weaken severity, add exclusions, or expand a baseline to manufacture a pass.
-- Results describe the selected source state, not a permanent certification. Relevant later edits invalidate a pass. The checker detects differing before/after snapshots; it is not an atomic snapshot or an environment cache.
-- Missing `quality.toml` is not a setup requirement for the skill. Use existing project checks directly. Do not substitute an empty check run for success.
+- Results describe the selected source state, not a permanent certification. Relevant later edits invalidate a pass. Do not substitute an empty check run or a source inventory for success.
 
 ## Update context
 
@@ -144,6 +152,6 @@ For comment-readability findings, include a precise location, a short representa
 - [Naming principles](references/naming-principles.md): four principles and rename trade-offs.
 - [Design principles](references/design-principles.md): balanced guidance from the books.
 - [Commenting principles](references/commenting-principles.md): when to comment, what to explain, placement, and maintenance.
-- [Checker contract](references/checker.md): configuration, output, scope, and limitations.
+- [Review helpers](references/review-helpers.md): rule retrieval, compact source context, and limitations.
+- [Updating the skill](references/updating.md): notifications, permissions, verified updates, and Windows completion.
 - [Repository context template](assets/repository-context.md): optional instruction/glossary excerpts.
-- [Quality template](assets/quality.toml.example): configure only applicable checks.

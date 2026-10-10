@@ -34,7 +34,7 @@ Report a rename only when its likely benefit outweighs compatibility and review 
 
 ## Deterministic boundary
 
-Explicit casing conventions, scoped deprecated aliases, or a documented unit suffix can be enforced by an AST/type-aware repository tool. The skill's bundled checker runs those tools; it does not use text regexes to decide whether a name represents the correct business concept.
+Explicit casing conventions, scoped deprecated aliases, or a documented unit suffix can be enforced by an AST/type-aware repository tool. Run those tools directly. The skill's source inventory helps locate declarations; it does not decide whether a name represents the correct business concept.
 
 Length, vague-name matches, confusable names, and suspicious boolean prefixes are review signals unless the project has deliberately adopted a narrow rule with appropriate exceptions.
 
