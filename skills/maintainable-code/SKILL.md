@@ -7,7 +7,7 @@ user-invocable: true
 
 # Maintainable Code
 
-Make the next change easier. Prefer concrete evidence and small useful corrections over generic clean-code advice.
+Support every finding with inspected evidence and propose the smallest correction that addresses its consequence. Do not substitute generic clean-code advice for an observed issue.
 
 The skill supplies a reusable checker and review guidance. The repository owns its vocabulary, architecture, commands, and exceptions. The harness supplies file access and execution; ordinary skill loading is sufficient.
 
@@ -26,6 +26,19 @@ Use existing repository context and tools by default. `quality.toml` is optional
 Use the user's requested scope. Resolve the actual project/worktree directory separately from this skill's installation directory. Supporting paths below are relative to the directory containing this `SKILL.md`; resolve that directory from the harness, rather than assuming the current directory contains the checker.
 
 A general maintainability or code-quality review covers **identifier clarity, API contracts, comment correctness/coverage, comment readability, and design/responsibilities**. Assess how names and prose help a reader understand working code, as well as whether behavior is correct. An explicitly narrow request limits the dimensions reviewed; record exclusions rather than silently dropping dimensions. Check-only and initialization requests do not imply a full semantic review.
+
+## Apply concrete rules
+
+Use [N1–N6](references/naming-principles.md#concrete-naming-rules) for naming/API, [C1–C4 and C5–C8](references/commenting-principles.md#concrete-comment-rules) for the two comment passes, and [D1–D8](references/design-principles.md) for design. Each rule specifies evidence to inspect, a finding condition, a correction, and cases to leave unchanged.
+
+For each applicable rule:
+
+1. Inspect the relevant declaration, implementation, callers, tests, or documented policy. Record the locations inspected; do not infer behavior from a name alone.
+2. Compare the evidence with the finding condition and its exceptions. If evidence is missing, record the specific unknown instead of asserting a defect. Skip inapplicable rules with a reason, such as no persisted schema for D8.
+3. For a supported finding, state the rule ID, exact location, observed mismatch, consequence, and smallest correction. For example: `N3 — client.py:42: timeout=5000 has no unit in its type or contract; callers cannot choose a duration reliably. Use timeoutMs or a duration type after checking consumers.`
+4. When editing, preserve the established contract and verify the affected callers. When reviewing read-only, propose the correction without changing files.
+
+Rule IDs label semantic review guidance, not built-in checker diagnostics. Passing configured commands does not establish that these rules were assessed. Do not invent findings to fill a rule checklist.
 
 ## Initialize
 

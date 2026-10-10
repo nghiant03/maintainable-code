@@ -42,6 +42,8 @@ After installation, ask your agent:
 
 A general maintainability review covers naming/API contracts, comments/docstrings, and design/responsibilities. Comment review has separate correctness/contract-coverage and clarity/subtraction passes. Reviews and implementations report inspected scope and results for each dimension before claiming completion; explicitly narrow requests can exclude dimensions. Passing checks alone does not establish semantic review coverage.
 
+All review dimensions use concrete rules: [N1–N6 for naming/API](skills/maintainable-code/references/naming-principles.md#concrete-naming-rules), [C1–C8 for comments](skills/maintainable-code/references/commenting-principles.md#concrete-comment-rules), and [D1–D8 for design](skills/maintainable-code/references/design-principles.md). Each rule states what to inspect, when to flag a finding, a correction example, and exceptions. These are contextual review rules, not automatic checker enforcement.
+
 Other requests:
 
 - “Review this diff with maintainable-code; focus on API naming and side effects.”
